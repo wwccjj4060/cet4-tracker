@@ -4,18 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-export type RootStackParamList = {
-  Tabs: undefined;
-  AddRecord: undefined;
-};
-
-export type RootTabParamList = {
-  Today: undefined;
-  Review: undefined;
-  Add: undefined;
-  Stats: undefined;
-  Profile: undefined;
-};
+import AddRecordScreen from '../screens/AddRecordScreen';
+import type { RootStackParamList, RootTabParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -45,8 +35,8 @@ function ProfileScreen() {
   return <Placeholder title="我的" stage="阶段 6 实现" />;
 }
 
-function AddRecordScreen() {
-  return <Placeholder title="添加记录" stage="阶段 2 实现" />;
+function EmptyTabScreen() {
+  return null;
 }
 
 function AddTabButton({ onPress }: { onPress: () => void }) {
@@ -71,7 +61,7 @@ function Tabs() {
       <Tab.Screen name="Review" component={ReviewScreen} options={{ title: '复习' }} />
       <Tab.Screen
         name="Add"
-        component={AddRecordScreen}
+        component={EmptyTabScreen}
         options={{
           title: '',
           tabBarButton: () => <AddTabButton onPress={() => navigation.navigate('AddRecord')} />,
