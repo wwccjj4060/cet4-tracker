@@ -21,3 +21,13 @@ export function getDb(): Promise<SQLite.SQLiteDatabase> {
   }
   return databasePromise;
 }
+
+export async function clearAllData(): Promise<void> {
+  const db = await getDb();
+  await db.withTransactionAsync(async () => {
+    await db.execAsync('DELETE FROM review_logs;');
+    await db.execAsync('DELETE FROM review_items;');
+    await db.execAsync('DELETE FROM study_logs;');
+    await db.execAsync('DELETE FROM daily_goals;');
+  });
+}

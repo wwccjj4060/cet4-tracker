@@ -10,6 +10,14 @@ export type DailyGoal = {
   targetAmount: number | null;
   unit: string | null;
   targetMinutes: number | null;
+  isActive: boolean;
+};
+
+export type DailyGoalInput = {
+  module: GoalModule;
+  targetAmount: number | null;
+  unit: string | null;
+  targetMinutes: number | null;
 };
 
 export type GoalProgress = {
@@ -27,6 +35,7 @@ type DailyGoalRow = {
   target_amount: number | null;
   unit: string | null;
   target_minutes: number | null;
+  is_active: number;
 };
 
 type ModuleTotalsRow = {
@@ -41,24 +50,43 @@ export const FALLBACK_GOAL: DailyGoal = {
   targetAmount: null,
   unit: null,
   targetMinutes: 60,
+  isActive: true,
 };
 
-export async function getDailyGoals(): Promise<DailyGoal[]> {
-  const db = await getDb();
-  const rows = await db.getAllAsync<DailyGoalRow>(
-    'SELECT * FROM daily_goals WHERE is_active = 1 ORDER BY id',
-    [],
-  );
-  if (rows.length === 0) {
-    return [FALLBACK_GOAL];
-  }
-  return rows.map((row) => ({
+function toDailyGoal(row: DailyGoalRow): DailyGoal {
+  return {
     id: row.id,
     module: row.module as GoalModule,
     targetAmount: row.target_amount,
     unit: row.unit,
     targetMinutes: row.target_minutes,
-  }));
+    isActive: row.is_active === 1,
+  };
+}
+
+export async function listDailyGoals(): Promise<DailyGoal[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<DailyGoalRow>('SELECT * FROM daily_goals ORDER BY id', []);
+  return rows.map(toDailyGoal);
+}
+
+export async function replaceDailyGoals(goals: DailyGoalInput[]): Promise<void> {
+  const db = await getDb();
+  await db.withTransactionAsync(async () => {
+    await db.runAsync('DELETE FROM daily_goals', []);
+    for (const goal of goals) {
+      await db.runAsync(
+        `INSERT INTO daily_goals (module, target_amount, unit, target_minutes, is_active)
+         VALUES (?, ?, ?, ?, 1)`,
+        [goal.module, goal.targetAmount, goal.unit, goal.targetMinutes],
+      );
+    }
+  });
+}
+
+export async function getDailyGoals(): Promise<DailyGoal[]> {
+  const goals = (await listDailyGoals()).filter((goal) => goal.isActive);
+  return goals.length > 0 ? goals : [FALLBACK_GOAL];
 }
 
 function labelOf(module: GoalModule, kind: 'amount' | 'minutes'): string {

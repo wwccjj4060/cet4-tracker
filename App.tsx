@@ -5,6 +5,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { getDb } from './src/db';
 import RootNavigator from './src/navigation/RootNavigator';
+import { configureNotificationHandler, syncReminders } from './src/notifications';
+
+configureNotificationHandler();
 
 export default function App() {
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -12,7 +15,10 @@ export default function App() {
 
   useEffect(() => {
     getDb().then(
-      () => setState('ready'),
+      () => {
+        setState('ready');
+        void syncReminders().catch(() => undefined);
+      },
       (error: unknown) => {
         setMessage(error instanceof Error ? error.message : String(error));
         setState('error');

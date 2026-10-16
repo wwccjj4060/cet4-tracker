@@ -2,10 +2,11 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
 import AddRecordScreen from '../screens/AddRecordScreen';
 import AddReviewItemScreen from '../screens/AddReviewItemScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 import ReviewScreen from '../screens/ReviewScreen';
 import StatsScreen from '../screens/StatsScreen';
 import TodayScreen from '../screens/TodayScreen';
@@ -13,19 +14,6 @@ import type { RootStackParamList, RootTabParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<RootTabParamList>();
-
-function Placeholder({ title, stage }: { title: string; stage: string }) {
-  return (
-    <View style={styles.placeholder}>
-      <Text style={styles.placeholderTitle}>{title}</Text>
-      <Text style={styles.placeholderStage}>{stage}</Text>
-    </View>
-  );
-}
-
-function ProfileScreen() {
-  return <Placeholder title="我的" stage="阶段 6 实现" />;
-}
 
 function EmptyTabScreen() {
   return null;
@@ -84,22 +72,6 @@ export default function RootNavigator() {
 }
 
 const styles = StyleSheet.create({
-  placeholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff',
-  },
-  placeholderTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#222222',
-  },
-  placeholderStage: {
-    marginTop: 6,
-    fontSize: 13,
-    color: '#888888',
-  },
   addButton: {
     top: -12,
     width: 56,
