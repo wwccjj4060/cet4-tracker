@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "四级学习记录器",
+    "slug": "cet4-tracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "android": {
+      "package": "com.cet4.tracker",
+      "permissions": ["android.permission.POST_NOTIFICATIONS"],
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": ["expo-notifications"]
+  }
+}
