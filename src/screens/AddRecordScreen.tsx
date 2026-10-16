@@ -1,7 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import dayjs from 'dayjs';
 import { useState } from 'react';
-import type { ReactNode } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -10,10 +9,17 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
+import {
+  ChipRow,
+  CUSTOM,
+  Field,
+  FormInput,
+  parseTagInput,
+  toChipOptions,
+} from '../components/FormControls';
 import {
   DEFAULT_UNIT,
   MODULES,
@@ -25,11 +31,7 @@ import type { StudyModule } from '../constants/modules';
 import { createStudyLog } from '../db/studyLogs';
 import type { RootStackParamList } from '../navigation/types';
 
-const CUSTOM = '自定义';
-
 type Props = NativeStackScreenProps<RootStackParamList, 'AddRecord'>;
-
-type ChipOption = { value: string; label: string };
 
 type ParsedNumber = { value: number | null; invalid: boolean };
 
@@ -43,56 +45,6 @@ function parsePositiveNumber(input: string, integer: boolean): ParsedNumber {
     return { value: null, invalid: true };
   }
   return { value: integer ? Math.round(parsed) : parsed, invalid: false };
-}
-
-function parseTagInput(input: string): string[] {
-  const tags = input
-    .split(/[,，、\s]+/)
-    .map((tag) => tag.trim())
-    .filter((tag) => tag.length > 0);
-  return Array.from(new Set(tags));
-}
-
-function toChipOptions(values: string[]): ChipOption[] {
-  return [...values.map((value) => ({ value, label: value })), { value: CUSTOM, label: CUSTOM }];
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
-function ChipRow({
-  options,
-  value,
-  onChange,
-}: {
-  options: ChipOption[];
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <View style={styles.chipRow}>
-      {options.map((option) => {
-        const active = option.value === value;
-        return (
-          <Pressable
-            key={option.value}
-            onPress={() => onChange(option.value)}
-            style={[styles.chip, active ? styles.chipActive : null]}
-          >
-            <Text style={[styles.chipLabel, active ? styles.chipLabelActive : null]}>
-              {option.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
 }
 
 export default function AddRecordScreen({ navigation }: Props) {
@@ -178,11 +130,6 @@ export default function AddRecordScreen({ navigation }: Props) {
     }
   }
 
-  const moduleOptions: ChipOption[] = MODULES.map((item) => ({
-    value: item,
-    label: MODULE_LABELS[item],
-  }));
-
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -191,7 +138,7 @@ export default function AddRecordScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Field label="模块">
           <ChipRow
-            options={moduleOptions}
+            options={MODULES.map((item) => ({ value: item, label: MODULE_LABELS[item] }))}
             value={module}
             onChange={(next) => selectModule(next as StudyModule)}
           />
@@ -204,98 +151,77 @@ export default function AddRecordScreen({ navigation }: Props) {
             onChange={setSubtype}
           />
           {subtype === CUSTOM ? (
-            <TextInput
-              style={styles.input}
+            <FormInput
               value={customSubtype}
               onChangeText={setCustomSubtype}
               placeholder="输入自定义子类"
-              placeholderTextColor="#9aa0a6"
             />
           ) : null}
         </Field>
 
         <Field label="内容">
-          <TextInput
-            style={styles.input}
+          <FormInput
             value={content}
             onChangeText={setContent}
             placeholder="如：abandon / 2024年6月真题听力"
-            placeholderTextColor="#9aa0a6"
           />
         </Field>
 
         <Field label="数量与单位">
-          <TextInput
-            style={styles.input}
+          <FormInput
             value={amount}
             onChangeText={setAmount}
             keyboardType="decimal-pad"
             placeholder="数量，如 30"
-            placeholderTextColor="#9aa0a6"
           />
           <ChipRow options={toChipOptions(UNIT_PRESETS[module])} value={unit} onChange={setUnit} />
           {unit === CUSTOM ? (
-            <TextInput
-              style={styles.input}
+            <FormInput
               value={customUnit}
               onChangeText={setCustomUnit}
               placeholder="输入自定义单位"
-              placeholderTextColor="#9aa0a6"
             />
           ) : null}
         </Field>
 
         <Field label="时长（分钟）">
-          <TextInput
-            style={styles.input}
+          <FormInput
             value={duration}
             onChangeText={setDuration}
             keyboardType="number-pad"
             placeholder="如 25"
-            placeholderTextColor="#9aa0a6"
           />
         </Field>
 
         <Field label="正确数 / 总数">
           <View style={styles.row}>
-            <TextInput
-              style={[styles.input, styles.rowItem]}
+            <FormInput
+              style={styles.rowItem}
               value={correct}
               onChangeText={setCorrect}
               keyboardType="number-pad"
               placeholder="正确数"
-              placeholderTextColor="#9aa0a6"
             />
-            <TextInput
-              style={[styles.input, styles.rowItem]}
+            <FormInput
+              style={styles.rowItem}
               value={total}
               onChangeText={setTotal}
               keyboardType="number-pad"
               placeholder="总数"
-              placeholderTextColor="#9aa0a6"
             />
           </View>
         </Field>
 
         <Field label="标签">
-          <TextInput
-            style={styles.input}
+          <FormInput
             value={tagInput}
             onChangeText={setTagInput}
             placeholder="用逗号分隔，如：高频词,易错"
-            placeholderTextColor="#9aa0a6"
           />
         </Field>
 
         <Field label="备注">
-          <TextInput
-            style={[styles.input, styles.multiline]}
-            value={note}
-            onChangeText={setNote}
-            multiline
-            placeholder="可选"
-            placeholderTextColor="#9aa0a6"
-          />
+          <FormInput value={note} onChangeText={setNote} multiline placeholder="可选" />
         </Field>
 
         <Pressable
@@ -320,61 +246,12 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 40,
   },
-  field: {
-    marginBottom: 18,
-  },
-  fieldLabel: {
-    marginBottom: 8,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222222',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d8dbe0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: '#222222',
-    backgroundColor: '#ffffff',
-  },
-  multiline: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
   row: {
     flexDirection: 'row',
     gap: 10,
   },
   rowItem: {
     flex: 1,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 8,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#d8dbe0',
-    backgroundColor: '#f7f8fa',
-  },
-  chipActive: {
-    borderColor: '#2f6fed',
-    backgroundColor: '#e8f0fe',
-  },
-  chipLabel: {
-    fontSize: 13,
-    color: '#555555',
-  },
-  chipLabelActive: {
-    color: '#2f6fed',
-    fontWeight: '600',
   },
   save: {
     marginTop: 8,

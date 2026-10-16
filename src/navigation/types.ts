@@ -1,6 +1,7 @@
 export type RootStackParamList = {
   Tabs: undefined;
   AddRecord: undefined;
+  AddReviewItem: undefined;
 };
 
 export type RootTabParamList = {

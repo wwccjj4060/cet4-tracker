@@ -5,6 +5,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import AddRecordScreen from '../screens/AddRecordScreen';
+import AddReviewItemScreen from '../screens/AddReviewItemScreen';
+import ReviewScreen from '../screens/ReviewScreen';
 import StatsScreen from '../screens/StatsScreen';
 import TodayScreen from '../screens/TodayScreen';
 import type { RootStackParamList, RootTabParamList } from './types';
@@ -19,10 +21,6 @@ function Placeholder({ title, stage }: { title: string; stage: string }) {
       <Text style={styles.placeholderStage}>{stage}</Text>
     </View>
   );
-}
-
-function ReviewScreen() {
-  return <Placeholder title="复习" stage="阶段 5 实现" />;
 }
 
 function ProfileScreen() {
@@ -75,6 +73,11 @@ export default function RootNavigator() {
         name="AddRecord"
         component={AddRecordScreen}
         options={{ title: '添加记录', presentation: 'modal' }}
+      />
+      <Stack.Screen
+        name="AddReviewItem"
+        component={AddReviewItemScreen}
+        options={{ title: '添加复习项', presentation: 'modal' }}
       />
     </Stack.Navigator>
   );
