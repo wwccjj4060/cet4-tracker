@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import AddRecordScreen from '../screens/AddRecordScreen';
+import TodayScreen from '../screens/TodayScreen';
 import type { RootStackParamList, RootTabParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -17,10 +18,6 @@ function Placeholder({ title, stage }: { title: string; stage: string }) {
       <Text style={styles.placeholderStage}>{stage}</Text>
     </View>
   );
-}
-
-function TodayScreen() {
-  return <Placeholder title="今日" stage="阶段 3 实现" />;
 }
 
 function ReviewScreen() {
