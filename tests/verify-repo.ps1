@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     校验本仓库的 Git 状态，确保 AGENTS.md 中的仓库要求被满足。
 
@@ -7,16 +7,21 @@
     AGENTS.md 已被跟踪、工作区干净、仓库对象完整。
     任意一项失败即以退出码 1 结束，全部通过则退出码 0。
 
-.EXAMPLE
-    pwsh -NoProfile -File .\tests\verify-repo.ps1
+    兼容 Windows PowerShell 5.1 与 PowerShell 7+。
+
+    注意：本文件含中文，必须保存为「UTF-8 带 BOM」。若丢失 BOM，
+    Windows PowerShell 5.1 会按本地代码页读取，导致语法错误。
 
 .EXAMPLE
-    pwsh -NoProfile -File .\tests\verify-repo.ps1 -GitPath 'D:\Desktop\tools\PortableGit\cmd\git.exe'
+    powershell -NoProfile -File .\tests\verify-repo.ps1
+
+.EXAMPLE
+    powershell -NoProfile -File .\tests\verify-repo.ps1 -GitPath 'D:\Desktop\tools\PortableGit\cmd\git.exe'
 #>
 [CmdletBinding()]
 param(
     # 待校验的仓库根目录，默认为本脚本所在目录的上一级。
-    [string]$RepoPath = (Split-Path -Parent $PSScriptRoot),
+    [string]$RepoPath,
 
     # git 可执行文件路径，默认先找 PATH，再回退到绿色版 PortableGit。
     [string]$GitPath
@@ -52,52 +57,61 @@ function Resolve-GitExecutable {
 
 function Invoke-Git {
     param(
-        [Parameter(Mandatory)][string[]]$GitArgs,
-        [switch]$AllowFailure
+        [Parameter(Mandatory = $true)][string[]]$GitArgs
     )
 
     $output = & $script:GitExe -C $script:RepoRoot @GitArgs 2>&1
     $exitCode = $LASTEXITCODE
     $text = (($output | ForEach-Object { $_.ToString() }) -join "`n").Trim()
 
-    if ($exitCode -ne 0 -and -not $AllowFailure) {
+    if ($exitCode -ne 0) {
         throw "git $($GitArgs -join ' ') 执行失败（退出码 $exitCode）：$text"
     }
     return $text
 }
 
-$results = [System.Collections.Generic.List[object]]::new()
+$results = New-Object System.Collections.ArrayList
 
 function Test-Check {
     param(
-        [Parameter(Mandatory)][string]$Name,
-        [Parameter(Mandatory)][scriptblock]$Body
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][scriptblock]$Body
     )
 
     try {
         $detail = & $Body
-        $results.Add([pscustomobject]@{ 检查项 = $Name; 结果 = 'PASS'; 说明 = $detail })
+        [void]$results.Add([pscustomobject]@{ 检查项 = $Name; 结果 = 'PASS'; 说明 = $detail })
     }
     catch {
-        $results.Add([pscustomobject]@{ 检查项 = $Name; 结果 = 'FAIL'; 说明 = $_.Exception.Message })
+        [void]$results.Add([pscustomobject]@{ 检查项 = $Name; 结果 = 'FAIL'; 说明 = $_.Exception.Message })
     }
 }
 
+# 参数默认值里取不到 $PSScriptRoot（Windows PowerShell 5.1 的行为），因此在这里解析。
+if (-not $RepoPath) {
+    $scriptDirectory = Get-Variable -Name PSScriptRoot -ValueOnly -ErrorAction SilentlyContinue
+    if (-not $scriptDirectory) {
+        $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
+    }
+    if (-not $scriptDirectory) {
+        $scriptDirectory = (Get-Location).Path
+    }
+    $RepoPath = Split-Path -Parent $scriptDirectory
+}
+
 if (-not (Test-Path -LiteralPath $RepoPath)) {
-    Write-Error "仓库目录不存在: $RepoPath"
+    Write-Host "仓库目录不存在: $RepoPath" -ForegroundColor Red
     exit 1
 }
-$RepoPath = (Resolve-Path -LiteralPath $RepoPath).Path
+$RepoRoot = (Resolve-Path -LiteralPath $RepoPath).Path
 
 try {
     $GitExe = Resolve-GitExecutable -Explicit $GitPath
 }
 catch {
-    Write-Error $_.Exception.Message
+    Write-Host $_.Exception.Message -ForegroundColor Red
     exit 1
 }
-
-$RepoRoot = $RepoPath
 
 Write-Host "仓库目录: $RepoRoot"
 Write-Host "git 路径: $GitExe"
@@ -107,30 +121,30 @@ Test-Check '仓库已初始化' {
     if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot '.git'))) {
         throw '缺少 .git 目录'
     }
-    $inside = Invoke-Git @('rev-parse', '--is-inside-work-tree')
+    $inside = Invoke-Git -GitArgs @('rev-parse', '--is-inside-work-tree')
     if ($inside -ne 'true') { throw "git 报告的工作区状态为 '$inside'" }
     '工作区已纳入 git 管理'
 }
 
 Test-Check '主分支为 main' {
-    $branch = Invoke-Git @('rev-parse', '--abbrev-ref', 'HEAD')
+    $branch = Invoke-Git -GitArgs @('rev-parse', '--abbrev-ref', 'HEAD')
     if ($branch -ne 'main') { throw "当前分支为 '$branch'，期望 'main'" }
     'main'
 }
 
 Test-Check '提交身份已配置' {
-    $name = Invoke-Git @('config', '--local', '--get', 'user.name')
-    $email = Invoke-Git @('config', '--local', '--get', 'user.email')
+    $name = Invoke-Git -GitArgs @('config', '--local', '--get', 'user.name')
+    $email = Invoke-Git -GitArgs @('config', '--local', '--get', 'user.email')
     if (-not $name) { throw '未配置 user.name' }
     if (-not $email) { throw '未配置 user.email' }
     "$name <$email>"
 }
 
 Test-Check '已有至少一次提交' {
-    $count = Invoke-Git @('rev-list', '--count', 'HEAD')
+    $count = Invoke-Git -GitArgs @('rev-list', '--count', 'HEAD')
     if ($count -notmatch '^\d+$') { throw "无法读取提交数量: '$count'" }
     if ([int]$count -lt 1) { throw '提交数量为 0' }
-    $head = Invoke-Git @('log', '-1', '--pretty=format:%h %s')
+    $head = Invoke-Git -GitArgs @('log', '-1', '--pretty=format:%h %s')
     "$count 次提交，最新：$head"
 }
 
@@ -138,19 +152,19 @@ Test-Check 'AGENTS.md 已被跟踪' {
     if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot 'AGENTS.md'))) {
         throw 'AGENTS.md 不存在'
     }
-    $tracked = Invoke-Git @('ls-files', '--error-unmatch', 'AGENTS.md')
+    $tracked = Invoke-Git -GitArgs @('ls-files', '--error-unmatch', 'AGENTS.md')
     if (-not $tracked) { throw 'AGENTS.md 未被 git 跟踪' }
     '已跟踪'
 }
 
 Test-Check '工作区干净' {
-    $porcelain = Invoke-Git @('status', '--porcelain')
+    $porcelain = Invoke-Git -GitArgs @('status', '--porcelain')
     if ($porcelain) { throw "存在未提交的改动：`n$porcelain" }
     '无未提交改动'
 }
 
 Test-Check '仓库对象完整' {
-    $fsck = Invoke-Git @('fsck', '--no-progress')
+    $fsck = Invoke-Git -GitArgs @('fsck', '--no-progress')
     if ($fsck) { return "fsck 输出：$fsck" }
     'fsck 未报告问题'
 }
