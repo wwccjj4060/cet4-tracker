@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import AddRecordScreen from '../screens/AddRecordScreen';
+import StatsScreen from '../screens/StatsScreen';
 import TodayScreen from '../screens/TodayScreen';
 import type { RootStackParamList, RootTabParamList } from './types';
 
@@ -22,10 +23,6 @@ function Placeholder({ title, stage }: { title: string; stage: string }) {
 
 function ReviewScreen() {
   return <Placeholder title="复习" stage="阶段 5 实现" />;
-}
-
-function StatsScreen() {
-  return <Placeholder title="统计" stage="阶段 4 实现" />;
 }
 
 function ProfileScreen() {
